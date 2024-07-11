@@ -1,10 +1,10 @@
 "use client";
-import React, { Suspense, useEffect } from "react";
-import { useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Form from "@components/Form";
-const UpdatePrompt = () => {
+
+const UpdatePromptContent = () => {
   const router = useRouter();
   const { data: session } = useSession();
   const [submitting, setSubmitting] = useState(false);
@@ -17,17 +17,21 @@ const UpdatePrompt = () => {
 
   useEffect(() => {
     const getPromptDetails = async () => {
-      const res = await fetch(`/api/prompt/${promptId}`);
-      const data = await res.json();
-      setPost({
-        prompt: data.prompt,
-        tag: data.tag,
-      });
+      if (!promptId) return;
+      try {
+        const res = await fetch(`/api/prompt/${promptId}`);
+        if (!res.ok) throw new Error("Failed to fetch prompt details");
+        const data = await res.json();
+        setPost({
+          prompt: data.prompt,
+          tag: data.tag,
+        });
+      } catch (error) {
+        console.error(error);
+      }
     };
 
-    if (promptId) {
-      getPromptDetails();
-    }
+    getPromptDetails();
   }, [promptId]);
 
   const updatePrompt = async (e) => {
@@ -41,6 +45,9 @@ const UpdatePrompt = () => {
           prompt: post.prompt,
           tag: post.tag,
         }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
       if (res.ok) router.push("/");
@@ -50,17 +57,22 @@ const UpdatePrompt = () => {
       setSubmitting(false);
     }
   };
+
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <Form
-        type="Edit"
-        post={post}
-        setPost={setPost}
-        submitting={submitting}
-        handleSubmit={updatePrompt}
-      />
-    </Suspense>
+    <Form
+      type="Edit"
+      post={post}
+      setPost={setPost}
+      submitting={submitting}
+      handleSubmit={updatePrompt}
+    />
   );
 };
+
+const UpdatePrompt = () => (
+  <Suspense fallback={<div>Loading...</div>}>
+    <UpdatePromptContent />
+  </Suspense>
+);
 
 export default UpdatePrompt;
